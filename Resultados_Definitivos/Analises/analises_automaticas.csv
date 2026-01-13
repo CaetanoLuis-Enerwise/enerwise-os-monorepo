@@ -1,0 +1,5 @@
+horizonte_minutos,horizonte_horas,melhor_modelo,melhor_mae,aplicacao_recomendada
+30,0.5,Prophet,1.1809202927601987,Operação em tempo real - Balanceamento
+360,6.0,Prophet,4.578990898822917,Programação intra-diária - Despacho
+720,12.0,Prophet,4.399585525181787,Planeamento diário - Unit commitment
+1440,24.0,Prophet,6.118173369948292,Planeamento operacional - Reservas

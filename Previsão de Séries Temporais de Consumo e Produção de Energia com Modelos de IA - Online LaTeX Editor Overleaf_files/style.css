@@ -1,0 +1,1 @@
+#writefull-app-root{visibility:hidden}#writefull-toolbar-launcher{display:flex;justify-content:center;align-items:center;flex-shrink:0}#writefull-toolbar-launcher+.ol-cm-toolbar-button{flex-shrink:0}#writefull-toolbar{display:flex;flex-flow:row nowrap;flex-shrink:0;height:var(--toolbar-small-height, 32px)}#writefull-toolbar.hidden{display:none}

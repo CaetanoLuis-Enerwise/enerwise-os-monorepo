@@ -1,0 +1,712 @@
+import os
+import glob
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import tensorflow as tf
+from sklearn.preprocessing import RobustScaler, MinMaxScaler
+from sklearn.metrics import (
+    mean_absolute_error, mean_squared_error, r2_score,
+    mean_absolute_percentage_error, explained_variance_score
+)
+from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.layers import (
+    LSTM, Dense, Input, MultiHeadAttention,
+    LayerNormalization, Dropout, Bidirectional, GlobalAveragePooling1D
+)
+from tensorflow.keras.callbacks import (
+    EarlyStopping, ModelCheckpoint,
+    ReduceLROnPlateau, TensorBoard
+)
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.losses import Huber
+from prophet import Prophet
+from prophet.diagnostics import cross_validation, performance_metrics
+import logging
+from typing import Tuple, Dict, Optional, List
+from datetime import datetime
+import warnings
+import joblib
+
+# Configuração de warnings
+warnings.filterwarnings("ignore")
+pd.set_option('display.max_columns', None)
+sns.set(style='whitegrid')
+
+
+class Config:
+    # Diretórios (substitua pelos seus caminhos)
+    DIR_CONSUMO = r"C:\Users\HP\Documents\Projeto Final de curso\Consumo"
+    DIR_PV = r"C:\Users\HP\Documents\Projeto Final de curso\PV"
+    SAIDA = r"C:\Users\HP\Documents\Projeto Final de curso\Resultados_Avancados"
+
+    # Hiperparâmetros
+    SEED = 42
+    TIMESTEPS = 24 * 7 * 2  # Duas semanas de dados históricos
+    TEST_SIZE = 0.2  # 20% para teste
+    EPOCHS = 300
+    BATCH_SIZE = 128
+    EARLY_STOPPING_PATIENCE = 25
+    LR_PATIENCE = 15
+    MIN_LR = 1e-7
+    VALIDATION_SPLIT = 0.15
+
+    # Prophet
+    PROPHET_SEASONALITY = {
+        'yearly': True,
+        'weekly': True,
+        'daily': True,
+        'hourly': False
+    }
+    PROPHET_CONFIG = {
+        'changepoint_prior_scale': 0.05,
+        'seasonality_prior_scale': 10.0,
+        'seasonality_mode': 'additive',
+        'mcmc_samples': 0
+    }
+
+# Inicialização
+os.makedirs(Config.SAIDA, exist_ok=True)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(os.path.join(Config.SAIDA, "execucao_avancada.log")),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+np.random.seed(Config.SEED)
+tf.random.set_seed(Config.SEED)
+
+# ======================
+# UTILITÁRIOS (MELHORADOS)
+# ======================
+class DataProcessor:
+    """Classe avançada para processamento de dados"""
+
+    @staticmethod
+    def criar_diretorio(caminho: str) -> None:
+        """Cria diretório com verificação e logging"""
+        try:
+            if not os.path.exists(caminho):
+                os.makedirs(caminho)
+                logger.info(f"Diretório criado: {caminho}")
+        except Exception as e:
+            logger.error(f"Falha ao criar diretório {caminho}: {str(e)}")
+            raise
+
+    @staticmethod
+    def detectar_separador(arquivo: str) -> str:
+        """Detecta separador de arquivo com tratamento robusto"""
+        try:
+            with open(arquivo, 'r', encoding='utf-8', errors='ignore') as f:
+                primeira_linha = f.readline()
+
+            for sep in ['\t', ';', ',', '|']:
+                if sep in primeira_linha:
+                    return sep
+            return ','
+        except Exception as e:
+            logger.warning(f"Falha ao detectar separador: {str(e)}")
+            return ','
+
+    @staticmethod
+    def detectar_coluna_temporal(df: pd.DataFrame) -> str:
+        """Detecta automaticamente a coluna temporal com mais robustez"""
+        time_keywords = ['timestamp', 'date', 'time', 'hora', 'datatime', 'dt', 'node']
+        
+        for col in df.columns:
+            col_lower = col.lower()
+            if any(kw in col_lower for kw in time_keywords):
+                return col
+            if pd.api.types.is_datetime64_any_dtype(df[col]):
+                return col
+        
+        for col in df.columns:
+            try:
+                pd.to_datetime(df[col])
+                return col
+            except:
+                continue
+        
+        return df.columns[0]
+
+    @staticmethod
+    def detectar_colunas_nos(df):
+        timestamp_col = DataProcessor.detectar_coluna_temporal(df)
+        if timestamp_col:
+            df.rename(columns={timestamp_col: 'timestamp'}, inplace=True)
+        elif df.columns.size > 0:
+            df.rename(columns={df.columns[0]: 'timestamp'}, inplace=True)
+        
+        numeric_cols = [col for col in df.columns if pd.api.types.is_numeric_dtype(df[col]) and col != 'timestamp']
+        if not numeric_cols:
+            numeric_cols = [col for col in df.columns if col != 'timestamp']
+            for col in numeric_cols:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+            numeric_cols = [col for col in numeric_cols if pd.api.types.is_numeric_dtype(df[col])]
+        return numeric_cols
+
+    @staticmethod
+    def processar_arquivo(arquivo: str, tipo: str) -> Optional[pd.DataFrame]:
+        """Processamento robusto de arquivos com validação"""
+        try:
+            sep = DataProcessor.detectar_separador(arquivo)
+            df = pd.read_csv(
+                arquivo,
+                sep=sep,
+                engine='python',
+                parse_dates=True,
+                infer_datetime_format=True,
+                dayfirst=True
+            )
+
+            # Identificação automática de colunas
+            numeric_cols = DataProcessor.detectar_colunas_nos(df)
+            if not numeric_cols:
+                logger.error(f"Nenhuma coluna numérica válida encontrada em {os.path.basename(arquivo)}")
+                return None
+
+            # Processamento de timestamp
+            df = df.rename(columns={DataProcessor.detectar_coluna_temporal(df): 'timestamp'})
+            df['timestamp'] = pd.to_datetime(
+                df['timestamp'],
+                dayfirst=True,
+                errors='coerce'
+            )
+            
+            # Remover duplicatas antes de definir o índice
+            df = df.drop_duplicates(subset=['timestamp'])
+            df = df.dropna(subset=['timestamp']).set_index('timestamp')
+            
+            # Verificar e remover duplicatas no índice
+            df = df[~df.index.duplicated(keep='first')]
+
+            # Consolidação e resample
+            df['total'] = df[numeric_cols].sum(axis=1, min_count=1)
+            df = df[['total']].asfreq('30T')
+
+            # Preenchimento de missing values com interpolação
+            df = df.interpolate(method='time').fillna(method='ffill').fillna(method='bfill')
+
+            # Validação final
+            if df.empty or df.isnull().values.any():
+                raise ValueError("Dados inválidos após processamento")
+
+            return df
+
+        except Exception as e:
+            logger.error(f"Erro no processamento de {os.path.basename(arquivo)} ({tipo}): {str(e)}")
+            return None
+
+    @staticmethod
+    def consolidar_dados(diretorio: str, tipo: str) -> Optional[pd.DataFrame]:
+        """Consolida múltiplos arquivos em um único DataFrame"""
+        try:
+            padroes = {
+                'consumo': ['consumo', 'demanda', 'load', 'usage'],
+                'pv': ['pv', 'fotovoltaico', 'solar', 'geracao']
+            }.get(tipo.lower(), [tipo])
+
+            arquivos = []
+            for padrao in padroes:
+                arquivos.extend(glob.glob(os.path.join(diretorio, f"*{padrao}*.*")))
+
+            dfs = []
+            for arquivo in sorted(set(arquivos)):
+                if any(arquivo.lower().endswith(ext) for ext in ['.csv', '.txt', '.xlsx']):
+                    df = DataProcessor.processar_arquivo(arquivo, tipo)
+                    if df is not None:
+                        dfs.append(df)
+
+            if not dfs:
+                logger.error(f"Nenhum dado válido encontrado para {tipo}")
+                return None
+
+            df_consolidado = pd.concat(dfs, axis=1).fillna(0)
+            df_final = pd.DataFrame({
+                f'total_{tipo}': df_consolidado.sum(axis=1)
+            }).asfreq('30T')
+
+            # Garantir que não há duplicatas no índice final
+            df_final = df_final[~df_final.index.duplicated(keep='first')]
+
+            return df_final.interpolate(method='time').fillna(method='ffill')
+
+        except Exception as e:
+            logger.error(f"Erro na consolidação de {tipo}: {str(e)}")
+            return None
+
+    @staticmethod
+    def calcular_consumo_liquido(consumo: pd.DataFrame, pv: pd.DataFrame) -> pd.DataFrame:
+        """Calcula o consumo líquido com validação"""
+        try:
+            if consumo is None or pv is None:
+                raise ValueError("Dados de entrada inválidos")
+
+            # Sincronização temporal
+            df = pd.concat([consumo, pv], axis=1, join='inner').dropna()
+            df.columns = ['total_consumo', 'total_pv']
+
+            # Cálculo do líquido com tratamento de valores negativos
+            df['consumo_liquido'] = (df['total_consumo'] - df['total_pv']).clip(lower=0)
+
+            return df[['consumo_liquido']]
+
+        except Exception as e:
+            logger.error(f"Erro no cálculo do consumo líquido: {str(e)}")
+            raise
+
+# ======================
+# MODELOS (APERFEIÇOADOS)
+# ======================
+class ModelBuilder:
+    """Classe para construção e treinamento de modelos avançados"""
+
+    @staticmethod
+    def criar_lstm(timesteps: int, features: int) -> tf.keras.Model:
+        """LSTM Bidirecional com regularização avançada"""
+        model = Sequential([
+            Bidirectional(LSTM(128, return_sequences=True),
+                         input_shape=(timesteps, features)),
+            LayerNormalization(),
+            Dropout(0.3),
+            Bidirectional(LSTM(64, return_sequences=True)),
+            LayerNormalization(),
+            Dropout(0.2),
+            Bidirectional(LSTM(32)),
+            LayerNormalization(),
+            Dropout(0.1),
+            Dense(32, activation='relu'),
+            Dense(1)
+        ])
+
+        optimizer = Adam(learning_rate=0.001, clipvalue=0.5)
+        model.compile(
+            optimizer=optimizer,
+            loss=Huber(),  # Corrigido: usando a classe Huber corretamente
+            metrics=['mae', 'mse']
+        )
+        return model
+
+    @staticmethod
+    def criar_transformer(timesteps: int, features: int) -> tf.keras.Model:
+        """Transformer com múltiplas cabeças de atenção"""
+        inputs = Input(shape=(timesteps, features))
+
+        # Camada de normalização inicial
+        x = LayerNormalization(epsilon=1e-6)(inputs)
+
+        # Mecanismo de atenção multi-head
+        attn_output = MultiHeadAttention(
+            num_heads=4,
+            key_dim=64,
+            dropout=0.1
+        )(x, x)
+
+        # Pulo residual e normalização
+        x = LayerNormalization(epsilon=1e-6)(x + attn_output)
+
+        # Feed Forward Network
+        ff_output = Dense(128, activation='gelu')(x)
+        ff_output = Dropout(0.2)(ff_output)
+        ff_output = Dense(features)(ff_output)
+
+        # Saída final
+        outputs = LayerNormalization(epsilon=1e-6)(x + ff_output)
+        outputs = GlobalAveragePooling1D()(outputs)
+        outputs = Dense(32, activation='relu')(outputs)
+        outputs = Dense(1)(outputs)
+
+        model = Model(inputs=inputs, outputs=outputs)
+
+        optimizer = Adam(learning_rate=0.001, clipnorm=1.0)
+        model.compile(
+            optimizer=optimizer,
+            loss=Huber(),  # Corrigido: usando a classe Huber corretamente
+            metrics=['mae', 'mse']
+        )
+        return model
+
+    @staticmethod
+    def criar_prophet() -> Prophet:
+        """Prophet com configuração avançada"""
+        model = Prophet(
+            **Config.PROPHET_CONFIG,
+            holidays=None,
+            seasonality_mode='additive',
+            yearly_seasonality=Config.PROPHET_SEASONALITY['yearly'],
+            weekly_seasonality=Config.PROPHET_SEASONALITY['weekly'],
+            daily_seasonality=Config.PROPHET_SEASONALITY['daily']
+        )
+
+        if Config.PROPHET_SEASONALITY['hourly']:
+            model.add_seasonality(
+                name='hourly',
+                period=1/24,
+                fourier_order=5
+            )
+
+        return model
+
+# ======================
+# TREINAMENTO E AVALIAÇÃO (COMPLETO)
+# ======================
+class ModelTrainer:
+    """Classe para treinamento e avaliação avançada"""
+
+    @staticmethod
+    def preparar_dados(dados: pd.DataFrame, coluna: str) -> Tuple[
+        np.ndarray, np.ndarray, np.ndarray, np.ndarray, RobustScaler, pd.DatetimeIndex
+    ]:
+        """Prepara dados para modelos sequenciais com scaler robusto"""
+        # Garantir ordenação temporal
+        dados = dados.sort_index()
+        
+        # Verificar e remover duplicatas finais
+        dados = dados[~dados.index.duplicated(keep='first')]
+        
+        scaler = RobustScaler()
+        dados_norm = scaler.fit_transform(dados[[coluna]])
+
+        X, y = [], []
+        for i in range(Config.TIMESTEPS, len(dados_norm)):
+            X.append(dados_norm[i-Config.TIMESTEPS:i, 0])
+            y.append(dados_norm[i, 0])
+
+        X, y = np.array(X), np.array(y)
+        X = X.reshape(X.shape[0], X.shape[1], 1)
+
+        # Divisão treino-teste mantendo ordem temporal
+        split = int(len(X) * (1 - Config.TEST_SIZE))
+        X_train, X_test = X[:split], X[split:]
+        y_train, y_test = y[:split], y[split:]
+
+        # Salvar scaler para uso futuro
+        joblib.dump(scaler, os.path.join(Config.SAIDA, 'scaler.save'))
+
+        return X_train, X_test, y_train, y_test, scaler, dados.index[Config.TIMESTEPS + split:]
+
+    @staticmethod
+    def treinar_modelo(
+        modelo: tf.keras.Model,
+        X_train: np.ndarray,
+        y_train: np.ndarray,
+        X_test: np.ndarray,
+        y_test: np.ndarray,
+        nome: str
+    ) -> Dict:
+        """Treinamento avançado com callbacks e logging"""
+        try:
+            # Criar diretório para logs
+            log_dir = os.path.join(Config.SAIDA, 'logs', nome)
+            os.makedirs(log_dir, exist_ok=True)
+
+            callbacks = [
+                EarlyStopping(
+                    patience=Config.EARLY_STOPPING_PATIENCE,
+                    restore_best_weights=True,
+                    monitor='val_loss',
+                    mode='min'
+                ),
+                ReduceLROnPlateau(
+                    monitor='val_loss',
+                    factor=0.5,
+                    patience=Config.LR_PATIENCE,
+                    min_lr=Config.MIN_LR,
+                    verbose=1
+                ),
+                ModelCheckpoint(
+                    os.path.join(Config.SAIDA, f'melhor_{nome}.h5'),
+                    monitor='val_loss',
+                    save_best_only=True,
+                    save_weights_only=False
+                ),
+                TensorBoard(
+                    log_dir=log_dir,
+                    histogram_freq=1
+                )
+            ]
+
+            history = modelo.fit(
+                X_train, y_train,
+                validation_data=(X_test, y_test),
+                epochs=Config.EPOCHS,
+                batch_size=Config.BATCH_SIZE,
+                callbacks=callbacks,
+                verbose=1,
+                shuffle=False  # Importante para dados temporais
+            )
+
+            # Salvar modelo final
+            modelo.save(os.path.join(Config.SAIDA, f'modelo_final_{nome}.h5'))
+
+            # Plotar histórico de treino
+            plt.figure(figsize=(12, 6))
+            plt.plot(history.history['loss'], label='Train Loss')
+            plt.plot(history.history['val_loss'], label='Validation Loss')
+            plt.title(f'Histórico de Treino - {nome}')
+            plt.xlabel('Época')
+            plt.ylabel('Loss')
+            plt.legend()
+            plt.savefig(os.path.join(Config.SAIDA, f'historico_treino_{nome}.png'))
+            plt.close()
+
+            return {
+                'model': modelo,
+                'history': history
+            }
+
+        except Exception as e:
+            logger.error(f"Erro no treinamento do {nome}: {str(e)}")
+            raise
+
+    @staticmethod
+    def avaliar_modelo(
+        modelo: tf.keras.Model,
+        X_test: np.ndarray,
+        y_test: np.ndarray,
+        scaler: RobustScaler,
+        timestamps: pd.DatetimeIndex,
+        nome: str
+    ) -> Dict:
+        """Avaliação completa com múltiplas métricas"""
+        try:
+            # Previsões
+            y_pred = modelo.predict(X_test)
+            y_pred = scaler.inverse_transform(y_pred.reshape(-1, 1)).flatten()
+            y_true = scaler.inverse_transform(y_test.reshape(-1, 1)).flatten()
+
+            # Cálculo de métricas
+            metrics = {
+                'MAE': mean_absolute_error(y_true, y_pred),
+                'MSE': mean_squared_error(y_true, y_pred),
+                'RMSE': np.sqrt(mean_squared_error(y_true, y_pred)),
+                'MAPE': mean_absolute_percentage_error(y_true, y_pred),
+                'R2': r2_score(y_true, y_pred),
+                'Explained Variance': explained_variance_score(y_true, y_pred)
+            }
+
+            # Salvar resultados
+            resultados = pd.DataFrame({
+                'timestamp': timestamps,
+                'real': y_true,
+                'previsto': y_pred
+            })
+            resultados.to_csv(
+                os.path.join(Config.SAIDA, f'resultados_{nome}.csv'),
+                index=False
+            )
+
+            # Gráficos avançados
+            plt.figure(figsize=(15, 8))
+
+            # Série temporal
+            plt.subplot(2, 1, 1)
+            plt.plot(resultados['timestamp'], resultados['real'], label='Real', linewidth=1)
+            plt.plot(resultados['timestamp'], resultados['previsto'], label='Previsto', alpha=0.8)
+            plt.title(f'Comparação Real vs Previsto - {nome}')
+            plt.legend()
+            plt.grid(True)
+
+            # Resíduos
+            plt.subplot(2, 1, 2)
+            residuos = resultados['real'] - resultados['previsto']
+            plt.scatter(resultados['previsto'], residuos, alpha=0.5)
+            plt.axhline(y=0, color='r', linestyle='--')
+            plt.title('Análise de Resíduos')
+            plt.xlabel('Valores Previstos')
+            plt.ylabel('Resíduos')
+            plt.grid(True)
+
+            plt.tight_layout()
+            plt.savefig(os.path.join(Config.SAIDA, f'avaliacao_{nome}.png'))
+            plt.close()
+
+            return metrics
+
+        except Exception as e:
+            logger.error(f"Erro na avaliação do {nome}: {str(e)}")
+            raise
+
+    @staticmethod
+    def treinar_avaliar_prophet(dados: pd.DataFrame, coluna: str) -> Dict:
+        """Treinamento e avaliação avançada do Prophet"""
+        try:
+            # Preparação dos dados
+            df = dados.reset_index()[[dados.index.name, coluna]]
+            df.columns = ['ds', 'y']
+
+            # Verificar e remover duplicatas
+            df = df.drop_duplicates(subset=['ds'])
+            df = df.dropna(subset=['ds', 'y'])
+
+            # Divisão treino-teste
+            split_idx = int(len(df) * (1 - Config.TEST_SIZE))
+            train, test = df.iloc[:split_idx], df.iloc[split_idx:]
+
+            # Treinamento
+            modelo = ModelBuilder.criar_prophet()
+            modelo.fit(train)
+
+            # Previsão
+            future = modelo.make_future_dataframe(
+                periods=len(test),
+                freq='30T',
+                include_history=False
+            )
+            forecast = modelo.predict(future)
+
+            # Validação cruzada
+            try:
+                df_cv = cross_validation(
+                    modelo,
+                    initial=f'{int(len(train)*0.7)} days',
+                    period='7 days',
+                    horizon='14 days',
+                    parallel='processes'
+                )
+                cv_metrics = performance_metrics(df_cv)
+            except Exception as cv_error:
+                logger.warning(f"Erro na validação cruzada: {str(cv_error)}")
+                cv_metrics = None
+
+            # Métricas
+            y_true = test['y'].values
+            y_pred = forecast['yhat'].values
+
+            metrics = {
+                'MAE': mean_absolute_error(y_true, y_pred),
+                'MSE': mean_squared_error(y_true, y_pred),
+                'RMSE': np.sqrt(mean_squared_error(y_true, y_pred)),
+                'MAPE': mean_absolute_percentage_error(y_true, y_pred),
+                'R2': r2_score(y_true, y_pred),
+                'Explained Variance': explained_variance_score(y_true, y_pred)
+            }
+
+            # Gráficos
+            fig1 = modelo.plot(forecast)
+            plt.title(f'Previsão Prophet - {coluna}')
+            plt.savefig(os.path.join(Config.SAIDA, 'prophet_previsao.png'))
+            plt.close()
+
+            fig2 = modelo.plot_components(forecast)
+            plt.savefig(os.path.join(Config.SAIDA, 'prophet_componentes.png'))
+            plt.close()
+
+            # Salvar resultados
+            resultados = pd.merge(
+                test,
+                forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']],
+                on='ds'
+            )
+            resultados.to_csv(
+                os.path.join(Config.SAIDA, 'resultados_prophet.csv'),
+                index=False
+            )
+
+            return {
+                'metrics': metrics,
+                'cv_metrics': cv_metrics,
+                'model': modelo,
+                'forecast': forecast
+            }
+
+        except Exception as e:
+            logger.error(f"Erro no Prophet: {str(e)}")
+            raise
+
+# ======================
+# ANÁLISE COMPARATIVA
+# ======================
+class AnaliseComparativa:
+    """Classe para análise comparativa dos modelos"""
+
+    @staticmethod
+    def gerar_relatorio(metricas: Dict[str, Dict[str, float]]) -> pd.DataFrame:
+        """Gera relatório comparativo detalhado"""
+        df = pd.DataFrame.from_dict(metricas, orient='index')
+        df = df.reset_index().rename(columns={'index': 'Modelo'})
+
+        # Salvar relatório
+        df.to_csv(os.path.join(Config.SAIDA, 'relatorio_comparativo.csv'), index=False)
+
+        # Gráfico comparativo
+        plt.figure(figsize=(15, 8))
+        for metric in ['MAE', 'RMSE', 'R2', 'MAPE']:
+            plt.subplot(2, 2, list(['MAE', 'RMSE', 'R2', 'MAPE']).index(metric) + 1)
+            sns.barplot(x='Modelo', y=metric, data=df)
+            plt.title(f'Comparação de {metric}')
+            plt.xticks(rotation=45)
+
+        plt.tight_layout()
+        plt.savefig(os.path.join(Config.SAIDA, 'comparacao_modelos.png'))
+        plt.close()
+
+        return df
+
+# ======================
+# EXECUÇÃO PRINCIPAL
+# ======================
+def main():
+    try:
+        logger.info("INÍCIO DO PROCESSAMENTO AVANÇADO")
+
+        # 1. Processamento de Dados
+        logger.info("Processando dados de consumo...")
+        df_consumo = DataProcessor.consolidar_dados(Config.DIR_CONSUMO, 'consumo')
+
+        logger.info("Processando dados fotovoltaicos...")
+        df_pv = DataProcessor.consolidar_dados(Config.DIR_PV, 'pv')
+
+        if df_consumo is None or df_pv is None:
+            raise ValueError("Falha ao carregar dados de consumo ou PV")
+
+        logger.info("Calculando consumo líquido...")
+        dados_completos = DataProcessor.calcular_consumo_liquido(df_consumo, df_pv)
+        dados_completos.to_csv(os.path.join(Config.SAIDA, 'dados_consolidados.csv'))
+
+        # 2. Treinamento dos Modelos
+        metricas = {}
+
+        # LSTM
+        logger.info("\nTreinando modelo LSTM...")
+        X_train, X_test, y_train, y_test, scaler, timestamps = ModelTrainer.preparar_dados(
+            dados_completos, 'consumo_liquido'
+        )
+        lstm = ModelBuilder.criar_lstm(X_train.shape[1], X_train.shape[2])
+        ModelTrainer.treinar_modelo(lstm, X_train, y_train, X_test, y_test, 'LSTM')
+        metricas['LSTM'] = ModelTrainer.avaliar_modelo(
+            lstm, X_test, y_test, scaler, timestamps, 'LSTM'
+        )
+
+        # Transformer
+        logger.info("\nTreinando modelo Transformer...")
+        transformer = ModelBuilder.criar_transformer(X_train.shape[1], X_train.shape[2])
+        ModelTrainer.treinar_modelo(transformer, X_train, y_train, X_test, y_test, 'Transformer')
+        metricas['Transformer'] = ModelTrainer.avaliar_modelo(
+            transformer, X_test, y_test, scaler, timestamps, 'Transformer'
+        )
+
+        # Prophet
+        logger.info("\nTreinando modelo Prophet...")
+        prophet_result = ModelTrainer.treinar_avaliar_prophet(dados_completos, 'consumo_liquido')
+        metricas['Prophet'] = prophet_result['metrics']
+
+        # 3. Análise Comparativa
+        logger.info("\nGerando relatório comparativo...")
+        relatorio = AnaliseComparativa.gerar_relatorio(metricas)
+
+        logger.info("\nRESULTADOS FINAIS:")
+        logger.info("\n" + relatorio.to_string(index=False))
+
+        logger.info("\nPROCESSAMENTO CONCLUÍDO COM SUCESSO")
+
+    except Exception as e:
+        logger.error(f"ERRO NO PROCESSAMENTO PRINCIPAL: {str(e)}")
+        raise
+
+if __name__ == "__main__":
+    main()

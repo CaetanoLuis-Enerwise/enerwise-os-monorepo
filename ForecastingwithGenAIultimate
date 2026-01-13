@@ -1,0 +1,188 @@
+import pandas as pd
+import numpy as np
+import os
+import glob
+from datetime import datetime
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+import matplotlib.pyplot as plt
+
+# Configurações
+DIR_CONSUMO = r"C:\Users\HP\Documents\Projeto Final de curso\Consumo"
+DIR_PV = r"C:\Users\HP\Documents\Projeto Final de curso\PV"
+SAIDA = r"C:\Users\HP\Documents\Projeto Final de curso\Resultados"
+DEBUG = True
+
+def criar_diretorio_se_nao_existir(caminho):
+    if not os.path.exists(caminho):
+        os.makedirs(caminho)
+        print(f"Criado diretório: {caminho}")
+
+def log(mensagem, tipo="info"):
+    cores = {
+        "info": "\033[94m", "erro": "\033[91m", "success": "\033[92m",
+        "warning": "\033[93m", "destaque": "\033[95m"
+    }
+    print(f"{cores.get(tipo, '')}[{datetime.now().strftime('%H:%M:%S')}] {mensagem}\033[0m")
+
+def detectar_colunas_nos(df):
+    timestamp_cols = [col for col in df.columns if col.lower() == 'node']
+    if timestamp_cols:
+        df.rename(columns={timestamp_cols[0]: 'timestamp'}, inplace=True)
+    elif df.columns.size > 0:
+        df.rename(columns={df.columns[0]: 'timestamp'}, inplace=True)
+    else:
+        return []
+    numeric_cols = [col for col in df.columns if pd.api.types.is_numeric_dtype(df[col]) and col != 'timestamp']
+    return numeric_cols
+
+def carregar_arquivo_energia(caminho_arquivo, tipo_dado):
+    try:
+        with open(caminho_arquivo, 'r', encoding='utf-8', errors='ignore') as f:
+            primeira_linha = f.readline()
+        separador = '\t' if '\t' in primeira_linha else ';' if ';' in primeira_linha else ','
+
+        df = pd.read_csv(caminho_arquivo, sep=separador, engine='python')
+        if df.empty:
+            log(f"Arquivo vazio: {os.path.basename(caminho_arquivo)}", "warning")
+            return None
+
+        colunas_nos = detectar_colunas_nos(df)
+        if not colunas_nos:
+            log(f"Nenhuma coluna de consumo/PV encontrada em {os.path.basename(caminho_arquivo)}", "erro")
+            log(f"Colunas disponíveis: {list(df.columns)}", "info")
+            return None
+
+        df[colunas_nos] = df[colunas_nos].apply(pd.to_numeric, errors='coerce').fillna(0)
+        df['timestamp'] = pd.to_datetime(df['timestamp'], dayfirst=True, errors='coerce')
+        df = df.dropna(subset=['timestamp']).set_index('timestamp')
+        df = df.asfreq("30T")
+        df['total'] = df[colunas_nos].sum(axis=1)
+
+        if DEBUG:
+            log(f"Processado {tipo_dado.upper()}: {os.path.basename(caminho_arquivo)} | "
+                f"Período: {df.index.min().date()} a {df.index.max().date()} | "
+                f"Total: {df['total'].sum():.2f} kWh", "info")
+            log(f"Primeiros timestamps: {df.index[:5].tolist()}", "info")
+            log(f"Frequência inferida: {df.index.inferred_freq}", "info")
+
+        return df[['total']]
+
+    except Exception as e:
+        log(f"ERRO ao processar {os.path.basename(caminho_arquivo)}: {str(e)}", "erro")
+        return None
+
+def processar_dataset(tipo, dir_base):
+    log(f"\n{'='*50}\nProcessando: {tipo.upper()}\n{'='*50}", "destaque")
+
+    palavras_chave = ["consumo", "fotovoltaico", "pv"]
+    arquivos = []
+    for chave in palavras_chave:
+        arquivos += glob.glob(os.path.join(dir_base, f"*{chave.lower()}*_fase_*.txt"))
+    arquivos = sorted(list(set(arquivos)))
+
+    if not arquivos:
+        log(f"Nenhum arquivo encontrado para: {tipo}", "erro")
+        return None
+
+    dados_fases = []
+    for arquivo in arquivos:
+        fase = carregar_arquivo_energia(arquivo, tipo)
+        if fase is not None:
+            dados_fases.append(fase)
+
+    if not dados_fases:
+        log("Nenhum dado válido encontrado", "erro")
+        return None
+
+    df_consolidado = pd.concat(dados_fases, axis=1).fillna(0)
+    df_consolidado['total'] = df_consolidado.sum(axis=1)
+    df_consolidado = df_consolidado[['total']].asfreq("30T")
+
+    total_kwh = df_consolidado['total'].sum()
+
+    log(f"\nRESUMO {tipo.upper()}:", "success")
+    log(f"• Período: {df_consolidado.index.min().date()} a {df_consolidado.index.max().date()}", "info")
+    log(f"• Registros: {len(df_consolidado):,}", "info")
+    log(f"• Total kWh: {total_kwh:,.2f}", "success")
+
+    return df_consolidado
+
+def criar_modelo_lstm(timesteps, features):
+    modelo = Sequential()
+    modelo.add(LSTM(units=50, return_sequences=True, input_shape=(timesteps, features)))
+    modelo.add(LSTM(units=50))
+    modelo.add(Dense(units=1))
+    modelo.compile(optimizer='adam', loss='mean_squared_error')
+    return modelo
+
+def treinar_lstm(df):
+    scaler = MinMaxScaler(feature_range=(0, 1))
+    dados_normalizados = scaler.fit_transform(df.values)
+
+    timesteps = 60
+    X, y = [], []
+    for i in range(timesteps, len(dados_normalizados)):
+        X.append(dados_normalizados[i - timesteps:i, 0])
+        y.append(dados_normalizados[i, 0])
+
+    X, y = np.array(X), np.array(y)
+    X = X.reshape(X.shape[0], X.shape[1], 1)
+
+    modelo = criar_modelo_lstm(timesteps, 1)
+
+    early_stop = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+    checkpoint = ModelCheckpoint("modelo_melhor.h5", monitor='val_loss', save_best_only=True)
+
+    modelo.fit(X, y, epochs=200, batch_size=64, validation_split=0.1, callbacks=[early_stop, checkpoint])
+
+    previsoes = modelo.predict(X)
+    previsoes_invertidas = scaler.inverse_transform(previsoes)
+    y_invertido = scaler.inverse_transform(y.reshape(-1, 1))
+
+    mae = mean_absolute_error(y_invertido, previsoes_invertidas)
+    rmse = np.sqrt(mean_squared_error(y_invertido, previsoes_invertidas))
+    r2 = r2_score(y_invertido, previsoes_invertidas)
+
+    log(f"\nMÉTRICAS DO MODELO LSTM:", "destaque")
+    log(f"MAE: {mae:.2f}", "info")
+    log(f"RMSE: {rmse:.2f}", "info")
+    log(f"R²: {r2:.2f}", "info")
+
+    return modelo
+
+def main():
+    log("INÍCIO DO PROCESSAMENTO", "destaque")
+    criar_diretorio_se_nao_existir(SAIDA)
+
+    df_consumo = processar_dataset('consumo', DIR_CONSUMO)
+    df_pv = processar_dataset('fotovoltaico', DIR_PV)
+
+    if df_consumo is not None:
+        df_consumo.to_csv(os.path.join(SAIDA, "consumo_total.csv"))
+        log("Consumo salvo com sucesso.", "success")
+
+    if df_pv is not None:
+        df_pv.to_csv(os.path.join(SAIDA, "geracao_pv_total.csv"))
+        log("Geração PV salva com sucesso.", "success")
+
+    if df_consumo is not None and df_pv is not None:
+        df_liquido = pd.DataFrame({
+            'consumo_liquido': df_consumo['total'] - df_pv['total']
+        }).fillna(0).asfreq("30T")
+
+        df_liquido.to_csv(os.path.join(SAIDA, "consumo_liquido.csv"))
+        log("Consumo líquido salvo com sucesso.", "success")
+
+        # ➕ Treinamento LSTM no consumo líquido
+        treinar_lstm(df_liquido)
+    else:
+        log("Não foi possível calcular o consumo líquido (falta de dados).", "erro")
+
+    log("PROCESSAMENTO CONCLUÍDO", "destaque")
+
+if __name__ == "__main__":
+    main()
