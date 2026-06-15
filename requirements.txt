@@ -1,0 +1,11 @@
+fastapi
+httpx
+joblib
+langchain-openai>=1.0,<2
+langgraph>=1.0,<2
+langgraph-checkpoint-sqlite>=3.0,<4
+numpy
+pandas
+pydantic>=2
+scikit-learn
+uvicorn[standard]

@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Enerwise Enterprise Briefing</title>
+  <style>
+    @page { size: A4; margin: 14mm; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #0b0c10;
+      color: #f5f7f8;
+      font-family: "Segoe UI", Arial, sans-serif;
+      font-size: 11pt;
+      line-height: 1.45;
+    }
+    .page {
+      min-height: 267mm;
+      padding: 14mm;
+      page-break-after: always;
+      position: relative;
+      background:
+        radial-gradient(circle at 90% 5%, rgba(69,162,158,.18), transparent 28%),
+        #0b0c10;
+    }
+    .page:last-child { page-break-after: auto; }
+    h1 { font-size: 38pt; margin: 0 0 6mm; letter-spacing: -1.5px; }
+    h2 { font-size: 23pt; margin: 0 0 7mm; }
+    h3 { font-size: 13pt; color: #58c7c0; margin: 0 0 3mm; }
+    p { color: #c8ced2; margin: 0 0 4mm; }
+    .brand { color: #58c7c0; font-weight: 700; letter-spacing: 2px; }
+    .eyebrow { color: #f9d71c; font: 700 9pt Consolas, monospace; letter-spacing: 1.5px; }
+    .hero { margin-top: 42mm; max-width: 155mm; }
+    .hero p { font-size: 17pt; max-width: 145mm; }
+    .badge {
+      display: inline-block; border: 1px solid #45a29e; color: #7ee2dc;
+      border-radius: 99px; padding: 2mm 4mm; margin-top: 7mm;
+      font: 700 9pt Consolas, monospace;
+    }
+    .footer {
+      position: absolute; left: 14mm; right: 14mm; bottom: 8mm;
+      color: #667078; font-size: 8pt; display: flex; justify-content: space-between;
+    }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; }
+    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5mm; }
+    .card {
+      background: #15181d; border: 1px solid #272d33; border-radius: 4mm;
+      padding: 6mm; break-inside: avoid;
+    }
+    .metric { font-size: 25pt; font-weight: 750; color: #f5f7f8; }
+    .metric-label { color: #8f9aa2; font: 8pt Consolas, monospace; text-transform: uppercase; }
+    ul { margin: 0; padding-left: 5mm; color: #c8ced2; }
+    li { margin-bottom: 2.5mm; }
+    table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+    th { text-align: left; color: #7ee2dc; border-bottom: 1px solid #45a29e; padding: 3mm 2mm; }
+    td { border-bottom: 1px solid #282d33; padding: 3mm 2mm; color: #d7dcdf; }
+    .callout {
+      border-left: 3px solid #f9d71c; background: rgba(249,215,28,.06);
+      padding: 5mm; margin: 6mm 0; color: #e6e8e9;
+    }
+    .bar-row { display: grid; grid-template-columns: 38mm 1fr 34mm; gap: 4mm; align-items: center; margin: 4mm 0; }
+    .bar-label, .bar-value { font: 8.5pt Consolas, monospace; color: #c8ced2; }
+    .bar-track { height: 5mm; background: #20252b; border-radius: 99px; overflow: hidden; }
+    .bar { height: 100%; border-radius: 99px; }
+    .phase { border-left: 2px solid #45a29e; padding-left: 4mm; margin: 0 0 5mm; }
+    .small { font-size: 8.5pt; color: #8f9aa2; }
+    .risk { color: #ff8da1; }
+    .ok { color: #66d9a4; }
+  </style>
+</head>
+<body>
+  <section class="page">
+    <div class="brand">ENERWISE</div>
+    <div class="hero">
+      <div class="eyebrow">ENTERPRISE PILOT BRIEFING</div>
+      <h1>Predictive battery operations, measured before control.</h1>
+      <p>Forecast consumption and PV, schedule storage every 30 minutes, and prove value in shadow mode before enabling physical dispatch.</p>
+      <div class="badge">READY FOR ENTERPRISE SHADOW PILOT</div>
+    </div>
+    <div class="footer"><span>Confidential working document</span><span>Enerwise</span></div>
+  </section>
+
+  <section class="page">
+    <div class="eyebrow">THE PRODUCT</div>
+    <h2>One operational layer from telemetry to a safe battery setpoint.</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>Operational Flow</h3>
+        <ul>
+          <li>Timestamped consumption and PV ingestion.</li>
+          <li>Hybrid consumption and photovoltaic forecasting.</li>
+          <li>Net-load and tariff-aware scheduling.</li>
+          <li>Battery capacity, power, efficiency, SoC, and reserve constraints.</li>
+          <li>Time-limited command with safety interlocks.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Available Now</h3>
+        <ul>
+          <li>FastAPI operational service and typed web client.</li>
+          <li>30-minute plans and automatic dry-run control cycles.</li>
+          <li>Dashboard for forecast, grid, battery power, SoC, and actions.</li>
+          <li>Backtesting, benchmark evidence, and reproducible tests.</li>
+          <li>Adapter boundary for an authenticated inverter/BMS integration.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout"><strong>Production boundary:</strong> physical actuation remains disabled until the site-specific adapter, command acknowledgement, cybersecurity review, hardware-in-the-loop testing, and commissioning are accepted.</div>
+    <div class="footer"><span>Product position</span><span>2</span></div>
+  </section>
+
+  <section class="page">
+    <div class="eyebrow">REPRODUCIBLE EVIDENCE</div>
+    <h2>21,936 real observations across 15 months.</h2>
+    <div class="grid3">
+      <div class="card"><div class="metric">30 min</div><div class="metric-label">Data cadence</div></div>
+      <div class="card"><div class="metric">15</div><div class="metric-label">Calendar months</div></div>
+      <div class="card"><div class="metric">90.25%</div><div class="metric-label">Round-trip efficiency assumption</div></div>
+    </div>
+    <p class="small" style="margin-top:4mm">Dataset period: 2010-10-01 to 2011-12-31. Tariff and degradation assumptions are documented in the evidence package.</p>
+    <div class="card" style="margin-top:7mm">
+      <h3>Annualized Net Scenario Value</h3>
+      <div class="bar-row">
+              <div class="bar-label">Pilot 60Kwh</div>
+              <div class="bar-track">
+                <div class="bar" style="width:35.8%;background:#45a29e"></div>
+              </div>
+              <div class="bar-value">EUR 1,085/yr</div>
+            </div>
+<div class="bar-row">
+              <div class="bar-label">Commercial 120Kwh</div>
+              <div class="bar-track">
+                <div class="bar" style="width:61.2%;background:#2dd4bf"></div>
+              </div>
+              <div class="bar-value">EUR 1,853/yr</div>
+            </div>
+<div class="bar-row">
+              <div class="bar-label">Commercial 240Kwh</div>
+              <div class="bar-track">
+                <div class="bar" style="width:72.0%;background:#f9d71c"></div>
+              </div>
+              <div class="bar-value">EUR 2,182/yr</div>
+            </div>
+    </div>
+    <table style="margin-top:7mm">
+      <thead><tr><th>Scenario</th><th>Import reduction</th><th>Solar self-consumption</th><th>Equivalent cycles</th></tr></thead>
+      <tbody>
+        <tr><td>pilot_60kwh</td><td>10,479 kWh</td><td>87.67% to 94.65%</td><td>174.7</td></tr><tr><td>commercial_120kwh</td><td>16,285 kWh</td><td>87.67% to 98.52%</td><td>135.7</td></tr><tr><td>commercial_240kwh</td><td>18,525 kWh</td><td>87.67% to 99.99%</td><td>77.2</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><strong>Honest result:</strong> the current dispatch policy did not reduce the maximum monthly peak in this dataset. The measured value came from solar capture and energy shifting, not a demand-charge claim.</div>
+    <div class="footer"><span>Evidence: enterprise/evidence</span><span>3</span></div>
+  </section>
+
+  <section class="page">
+    <div class="eyebrow">REFERENCE SCENARIO</div>
+    <h2>120 kWh / 40 kW commercial battery.</h2>
+    <div class="grid3">
+      <div class="card"><div class="metric">EUR 2,321</div><div class="metric-label">Net value over benchmark</div></div>
+      <div class="card"><div class="metric">16.3 MWh</div><div class="metric-label">Grid import reduction</div></div>
+      <div class="card"><div class="metric">98.52%</div><div class="metric-label">Optimized solar self-consumption</div></div>
+    </div>
+    <div class="grid2" style="margin-top:7mm">
+      <div class="card">
+        <h3>Included Corrections</h3>
+        <ul>
+          <li>Continuous SoC over the full period.</li>
+          <li>Terminal SoC value adjustment.</li>
+          <li>EUR 0.04/kWh discharged degradation allowance.</li>
+          <li>Charge/discharge efficiency and reserve.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Not Yet Proven by This Benchmark</h3>
+        <ul>
+          <li>Customer-specific forecast accuracy.</li>
+          <li>Live telemetry availability and latency.</li>
+          <li>Hardware command success.</li>
+          <li>Customer tariff and operational savings.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout">This is a dispatch-potential benchmark using historical actuals. The enterprise pilot converts potential into measured, customer-specific evidence.</div>
+    <div class="footer"><span>Reference scenario</span><span>4</span></div>
+  </section>
+
+  <section class="page">
+    <div class="eyebrow">PILOT DESIGN</div>
+    <h2>Progressive risk reduction with explicit gates.</h2>
+    <div class="phase"><h3>0. Qualification - 3 to 5 days</h3><p>Data sample, tariff, topology, equipment, value estimate, integration gaps, go/no-go.</p></div>
+    <div class="phase"><h3>1. Data and Baseline - 1 to 2 weeks</h3><p>Read-only ingestion, data quality, bill reconstruction, KPI freeze, baseline acceptance.</p></div>
+    <div class="phase"><h3>2. Shadow Operations - 4 to 6 weeks</h3><p>Forecast and schedule every 30 minutes without hardware control. Measure forecast error, hypothetical value, availability, throughput, and exceptions.</p></div>
+    <div class="phase"><h3>3. Controlled Dispatch - 2 to 4 weeks</h3><p>Authenticated adapter, restricted envelope, command acknowledgement, telemetry confirmation, fallback, emergency stop, reviewed expansion.</p></div>
+    <div class="phase"><h3>4. Production Decision</h3><p>Accept, extend, remediate, or stop based on jointly agreed technical, safety, security, and economic gates.</p></div>
+    <div class="footer"><span>Pilot statement of work</span><span>5</span></div>
+  </section>
+
+  <section class="page">
+    <div class="eyebrow">SECURITY AND SAFETY</div>
+    <h2>Closed-loop control is an acceptance milestone, not a demo feature.</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3 class="ok">Required Controls</h3>
+        <ul>
+          <li>TLS, workload identity, RBAC, and rotated secrets.</li>
+          <li>Immutable schedule, command, acknowledgement, and override audit.</li>
+          <li>Fresh telemetry and device-health validation.</li>
+          <li>Power, SoC, reserve, time-validity, and emergency-stop interlocks.</li>
+          <li>Local-controller fallback and tested rollback.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 class="risk">Current Production Blockers</h3>
+        <ul>
+          <li>No customer-specific device adapter.</li>
+          <li>No customer-device command acknowledgement loop.</li>
+          <li>No production identity/authorization deployment.</li>
+          <li>No external immutable production audit destination.</li>
+          <li>No hardware-in-the-loop or site commissioning evidence.</li>
+          <li>No completed customer security assessment.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout">These blockers do not prevent read-only integration or shadow mode. They deliberately prevent unsupported unattended physical control.</div>
+    <div class="footer"><span>Security and safety posture</span><span>6</span></div>
+  </section>
+
+  <section class="page">
+    <div class="eyebrow">COMMERCIAL STRUCTURE</div>
+    <h2>Qualify first. Price integration and fleet value, not hype.</h2>
+    <table>
+      <thead><tr><th>Stage</th><th>Indicative band</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>Data and value assessment</td><td>EUR 5k-10k</td><td>Baseline, opportunity, integration and go/no-go.</td></tr>
+        <tr><td>Shadow-mode pilot</td><td>EUR 15k-30k</td><td>Live read-only operation and measured KPI report.</td></tr>
+        <tr><td>Controlled hardware pilot</td><td>+ EUR 20k-50k</td><td>Adapter, security, commissioning and controlled dispatch.</td></tr>
+        <tr><td>Production</td><td>After pilot</td><td>Per-site, fleet, managed service, or verified-value model.</td></tr>
+      </tbody>
+    </table>
+    <div class="callout"><strong>Qualification gate:</strong> expected three-year value should exceed implementation and operating cost by at least 3x, unless the buyer documents strategic fleet or resilience value.</div>
+    <p class="small">Indicative bands are an internal scoping framework, not a public price list or binding offer.</p>
+    <div class="footer"><span>Commercial model</span><span>7</span></div>
+  </section>
+
+  <section class="page">
+    <div class="eyebrow">THE ASK</div>
+    <h2>Select one site and prove the value together.</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>Customer Provides</h3>
+        <ul>
+          <li>6-12 months of interval consumption and PV.</li>
+          <li>Tariff, export compensation, and bill data.</li>
+          <li>Battery, inverter, BMS, and meter specifications.</li>
+          <li>Technical, cybersecurity, commercial, and site-safety owners.</li>
+          <li>Read-only connectivity for shadow mode.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Enerwise Delivers</h3>
+        <ul>
+          <li>Data quality and baseline report.</li>
+          <li>Live forecast and battery schedules.</li>
+          <li>Dashboard, evidence store, and weekly review.</li>
+          <li>Measured technical and economic KPIs.</li>
+          <li>Production go/no-go recommendation and rollout design.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="hero" style="margin-top:18mm">
+      <h1 style="font-size:30pt">No guaranteed savings.<br>Measured evidence, then control.</h1>
+    </div>
+    <div class="footer"><span>Next step: technical discovery session</span><span>8</span></div>
+  </section>
+</body>
+</html>

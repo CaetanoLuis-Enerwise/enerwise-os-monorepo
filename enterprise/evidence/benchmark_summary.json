@@ -1,0 +1,110 @@
+{
+  "metadata": {
+    "generated_at": "2026-06-15T19:23:06.600382+00:00",
+    "benchmark_engine": "enterprise_benchmark_v1",
+    "dataset": "app/data/dataset_enerwise_master.csv",
+    "dataset_sha256": "74eba56ab30b43578c485feb237ac875e0bfb064ab9da227cffac379b8550b98",
+    "records": 21936,
+    "start": "2010-10-01T00:00:00",
+    "end": "2011-12-31T23:30:00",
+    "interval_minutes": 30,
+    "demand_charge_eur_kw_month": 7.0,
+    "degradation_cost_eur_kwh_discharged": 0.04,
+    "duration_days": 457.0,
+    "tariff_assumptions_eur_kwh": {
+      "off_peak": 0.14,
+      "daytime": 0.22,
+      "peak": 0.3,
+      "export": 0.06
+    }
+  },
+  "scenarios": [
+    {
+      "scenario": "pilot_60kwh",
+      "battery": {
+        "capacity_kwh": 60,
+        "max_charge_kw": 20,
+        "max_discharge_kw": 20,
+        "initial_soc": 0.5,
+        "reserve_soc": 0.2,
+        "round_trip_efficiency": 0.9025
+      },
+      "gross_energy_savings_eur": 1781.9,
+      "terminal_soc_adjustment_eur": -3.79,
+      "soc_adjusted_energy_savings_eur": 1778.11,
+      "illustrative_demand_charge_savings_eur": 0.0,
+      "total_adjusted_savings_eur": 1778.11,
+      "illustrative_degradation_cost_eur": 419.16,
+      "net_savings_after_degradation_eur": 1358.95,
+      "annualized_net_savings_eur": 1085.38,
+      "total_adjusted_savings_percent": 1.5,
+      "grid_import_reduction_kwh": 10479.01,
+      "maximum_monthly_peak_reduction_kw": 0.0,
+      "average_monthly_peak_reduction_kw": 0.0,
+      "baseline_solar_self_consumption_percent": 87.67,
+      "optimized_solar_self_consumption_percent": 94.65,
+      "battery_charge_kwh": 11592.15,
+      "battery_discharge_kwh": 10479.01,
+      "equivalent_full_cycles": 174.65,
+      "final_soc": 0.2
+    },
+    {
+      "scenario": "commercial_120kwh",
+      "battery": {
+        "capacity_kwh": 120,
+        "max_charge_kw": 40,
+        "max_discharge_kw": 40,
+        "initial_soc": 0.5,
+        "reserve_soc": 0.2,
+        "round_trip_efficiency": 0.9025
+      },
+      "gross_energy_savings_eur": 2979.5,
+      "terminal_soc_adjustment_eur": -7.58,
+      "soc_adjusted_energy_savings_eur": 2971.92,
+      "illustrative_demand_charge_savings_eur": 0.0,
+      "total_adjusted_savings_eur": 2971.92,
+      "illustrative_degradation_cost_eur": 651.4,
+      "net_savings_after_degradation_eur": 2320.52,
+      "annualized_net_savings_eur": 1853.37,
+      "total_adjusted_savings_percent": 2.56,
+      "grid_import_reduction_kwh": 16285.08,
+      "maximum_monthly_peak_reduction_kw": 0.0,
+      "average_monthly_peak_reduction_kw": 0.0,
+      "baseline_solar_self_consumption_percent": 87.67,
+      "optimized_solar_self_consumption_percent": 98.52,
+      "battery_charge_kwh": 18006.53,
+      "battery_discharge_kwh": 16285.09,
+      "equivalent_full_cycles": 135.71,
+      "final_soc": 0.2
+    },
+    {
+      "scenario": "commercial_240kwh",
+      "battery": {
+        "capacity_kwh": 240,
+        "max_charge_kw": 80,
+        "max_discharge_kw": 80,
+        "initial_soc": 0.5,
+        "reserve_soc": 0.2,
+        "round_trip_efficiency": 0.9025
+      },
+      "gross_energy_savings_eur": 3487.63,
+      "terminal_soc_adjustment_eur": -15.16,
+      "soc_adjusted_energy_savings_eur": 3472.47,
+      "illustrative_demand_charge_savings_eur": 0.0,
+      "total_adjusted_savings_eur": 3472.47,
+      "illustrative_degradation_cost_eur": 741.01,
+      "net_savings_after_degradation_eur": 2731.46,
+      "annualized_net_savings_eur": 2181.58,
+      "total_adjusted_savings_percent": 3.01,
+      "grid_import_reduction_kwh": 18525.21,
+      "maximum_monthly_peak_reduction_kw": 0.0,
+      "average_monthly_peak_reduction_kw": 0.0,
+      "baseline_solar_self_consumption_percent": 87.67,
+      "optimized_solar_self_consumption_percent": 99.99,
+      "battery_charge_kwh": 20450.77,
+      "battery_discharge_kwh": 18525.21,
+      "equivalent_full_cycles": 77.19,
+      "final_soc": 0.2
+    }
+  ]
+}

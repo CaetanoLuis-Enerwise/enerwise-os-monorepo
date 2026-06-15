@@ -1,0 +1,4 @@
+scenario,gross_energy_savings_eur,terminal_soc_adjustment_eur,soc_adjusted_energy_savings_eur,illustrative_demand_charge_savings_eur,total_adjusted_savings_eur,illustrative_degradation_cost_eur,net_savings_after_degradation_eur,annualized_net_savings_eur,total_adjusted_savings_percent,grid_import_reduction_kwh,maximum_monthly_peak_reduction_kw,average_monthly_peak_reduction_kw,baseline_solar_self_consumption_percent,optimized_solar_self_consumption_percent,battery_charge_kwh,battery_discharge_kwh,equivalent_full_cycles,final_soc
+pilot_60kwh,1781.9,-3.79,1778.11,0.0,1778.11,419.16,1358.95,1085.38,1.5,10479.01,0.0,0.0,87.67,94.65,11592.15,10479.01,174.65,0.2
+commercial_120kwh,2979.5,-7.58,2971.92,0.0,2971.92,651.4,2320.52,1853.37,2.56,16285.08,0.0,0.0,87.67,98.52,18006.53,16285.09,135.71,0.2
+commercial_240kwh,3487.63,-15.16,3472.47,0.0,3472.47,741.01,2731.46,2181.58,3.01,18525.21,0.0,0.0,87.67,99.99,20450.77,18525.21,77.19,0.2
