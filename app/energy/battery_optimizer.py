@@ -36,7 +36,7 @@ class BatteryConfig:
             raise ValueError("Discharge efficiency must be in (0, 1].")
 
 
-def _default_tariff(timestamps: Sequence[str]) -> list[float]:
+def default_time_of_use_tariff(timestamps: Sequence[str]) -> list[float]:
     prices = []
     for timestamp in timestamps:
         hour = int(timestamp[11:13])
@@ -49,6 +49,10 @@ def _default_tariff(timestamps: Sequence[str]) -> list[float]:
     return prices
 
 
+def _default_tariff(timestamps: Sequence[str]) -> list[float]:
+    return default_time_of_use_tariff(timestamps)
+
+
 def optimize_battery_schedule(
     timestamps: Sequence[str],
     load_kw: Sequence[float],
@@ -57,6 +61,8 @@ def optimize_battery_schedule(
     interval_minutes: int,
     import_prices_eur_kwh: Optional[Sequence[float]] = None,
     export_price_eur_kwh: float = 0.06,
+    force_hold: bool = False,
+    hold_reason: str = "Safety fallback requested. Hold battery dispatch.",
 ) -> dict:
     """Create a deterministic battery dispatch plan under physical limits."""
     config.validate()
@@ -112,7 +118,9 @@ def optimize_battery_schedule(
         action: Action = "hold"
         reason = "No economically or physically useful battery action."
 
-        if net_kw < 0 and energy_kwh < max_energy:
+        if force_hold:
+            reason = hold_reason
+        elif net_kw < 0 and energy_kwh < max_energy:
             room_input_kwh = (max_energy - energy_kwh) / config.charge_efficiency
             charge_kw = min(
                 -net_kw,

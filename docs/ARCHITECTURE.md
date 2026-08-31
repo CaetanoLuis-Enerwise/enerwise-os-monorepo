@@ -12,6 +12,24 @@
 6. The API returns consumption, solar, net-load, volatility, and a battery
    recommendation through one stable response contract.
 
+## Market Data Boundary
+
+`app/market` isolates price and tariff data from the operational controller.
+`POST /market/prices` returns an aligned price series for a requested timeline.
+
+Supported sources:
+
+- `auto`: uses request prices when supplied, otherwise the deterministic
+  fallback tariff.
+- `default_tariff`: uses the built-in time-of-use tariff.
+- `explicit`: validates and imputes request-provided prices.
+- `external_market`: reads configured market prices from a provider. The
+  current provider supports CSV input through `ENERWISE_MARKET_PRICE_CSV`.
+
+If `external_market` is unavailable, malformed, or empty, the operations API
+returns a valid plan with `market.safe_mode=true` and forces every dispatch
+step to `hold`.
+
 ## Battery Controller
 
 The operational controller produces one action per source interval:
@@ -100,8 +118,8 @@ Response:
 - The operations endpoint uses explicit dataset timestamps and accepts aligned
   timestamp, consumption, and PV series from custom clients.
 - Solar geometry is physics-informed but does not yet ingest live weather.
-- Tariffs use a configurable time-of-use profile when no explicit price
-  series is provided.
+- Tariffs use a deterministic time-of-use profile when no explicit or external
+  market price series is provided.
 - Hardware actuation requires a vendor-specific authenticated adapter and
   site commissioning before it can be enabled.
 - The current telemetry and acknowledgement path is implemented against a

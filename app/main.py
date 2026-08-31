@@ -16,6 +16,7 @@ from app.energy.battery_optimizer import (
     BatteryConfig,
     optimize_battery_schedule,
 )
+from app.market import PriceSource, resolve_market_prices
 from app.operations.adapters import (
     AdapterRegistry,
     SimulatorBatteryAdapter,
@@ -159,6 +160,14 @@ class OperationRequest(BaseModel):
     historical_timestamps: Optional[list[str]] = None
     interval_minutes: Optional[int] = Field(default=None, ge=1, le=1440)
     import_prices_eur_kwh: Optional[list[float]] = None
+    price_source: PriceSource = Field(
+        default="auto",
+        description=(
+            "auto uses explicit prices when supplied, otherwise the deterministic "
+            "fallback tariff. external_market uses configured market providers and "
+            "forces HOLD on provider failure."
+        ),
+    )
     export_price_eur_kwh: float = Field(default=0.06, ge=0)
     battery: BatterySettings = Field(default_factory=BatterySettings)
 
@@ -175,6 +184,8 @@ class OperationRequest(BaseModel):
                 self.historical_data
             ):
                 raise ValueError("Custom PV history must align with consumption.")
+        if self.price_source == "explicit" and self.import_prices_eur_kwh is None:
+            raise ValueError("price_source='explicit' requires import_prices_eur_kwh.")
         return self
 
 
@@ -213,6 +224,18 @@ class SimulatorTelemetryRequest(BaseModel):
     controllable: bool = True
     emergency_stop: bool = False
     fault_code: Optional[str] = Field(default=None, max_length=120)
+
+
+class MarketPriceRequest(BaseModel):
+    timestamps: list[str] = Field(..., min_length=1)
+    price_source: PriceSource = "auto"
+    import_prices_eur_kwh: Optional[list[float]] = None
+
+    @model_validator(mode="after")
+    def validate_price_request(self):
+        if self.price_source == "explicit" and self.import_prices_eur_kwh is None:
+            raise ValueError("price_source='explicit' requires import_prices_eur_kwh.")
+        return self
 
 
 class ForecastMeta(BaseModel):
@@ -390,14 +413,21 @@ async def generate_operation_plan(payload: OperationRequest):
         forecast_timestamps = [item["timestamp"] for item in forecast]
         forecast_load = [item["load_kw"] for item in forecast]
         forecast_pv = [item["pv_kw"] for item in forecast]
+        market_prices = resolve_market_prices(
+            timestamps=forecast_timestamps,
+            source=payload.price_source,
+            explicit_prices=payload.import_prices_eur_kwh,
+        )
         optimization = optimize_battery_schedule(
             timestamps=forecast_timestamps,
             load_kw=forecast_load,
             pv_kw=forecast_pv,
             config=_battery_config(payload.battery),
             interval_minutes=interval_minutes,
-            import_prices_eur_kwh=payload.import_prices_eur_kwh,
+            import_prices_eur_kwh=market_prices.prices,
             export_price_eur_kwh=payload.export_price_eur_kwh,
+            force_hold=market_prices.safe_mode,
+            hold_reason=market_prices.message,
         )
 
         return {
@@ -412,6 +442,7 @@ async def generate_operation_plan(payload: OperationRequest):
                 "interval_minutes": interval_minutes,
                 "horizon_hours": payload.horizon_hours,
                 "generated_at": datetime.now(timezone.utc).isoformat(),
+                "market": market_prices.to_dict(include_points=False),
             },
             "forecast": {
                 "timeline": forecast_timestamps,
@@ -424,11 +455,35 @@ async def generate_operation_plan(payload: OperationRequest):
                 **optimization,
             },
         }
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
         logger.exception("Operation planning failed")
         raise HTTPException(
             status_code=500,
             detail=f"Operation planning failed: {exc}",
+        ) from exc
+
+
+@app.post("/market/prices", tags=["Market"])
+async def resolve_market_price_series(payload: MarketPriceRequest):
+    try:
+        market_prices = resolve_market_prices(
+            timestamps=payload.timestamps,
+            source=payload.price_source,
+            explicit_prices=payload.import_prices_eur_kwh,
+        )
+        return {
+            "status": "success",
+            "market": market_prices.to_dict(include_points=True),
+        }
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("Market price resolution failed")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Market price resolution failed: {exc}",
         ) from exc
 
 
