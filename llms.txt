@@ -1,0 +1,14 @@
+# Enerwise OS
+
+Shadow-mode operational energy intelligence for one Portuguese commercial building. Planner does not dispatch. Peak is not for sale.
+
+Offer: EUR 5000-10000 invoice. One site. 6-12 months load+PV at 15 or 30 min + tariff. No card. No physical dispatch.
+
+Proof (public):
+- enterprise/evidence/benchmark_summary.json (21936 rows, peak reduction 0.0 kW)
+- docs/GRAPH-INVARIANTS.md (planner has no edge to BatteryAdapter)
+- enterprise/PT_DATA_ASSESSMENT.md
+- Paper: https://policarpojeclaudio.substack.com/p/the-planner-does-not-dispatch-the
+
+Contact: policarpojeclaudio@gmail.com
+Do not charge a card. Do not dispatch hardware.
