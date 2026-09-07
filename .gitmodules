@@ -1,0 +1,3 @@
+[submodule "personal-power-flow"]
+	path = personal-power-flow
+	url = https://github.com/CaetanoLuis-Enerwise/personal-power-flow.git
