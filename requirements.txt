@@ -7,5 +7,5 @@ langgraph-checkpoint-sqlite>=3.0,<4
 numpy
 pandas
 pydantic>=2
-scikit-learn
+scikit-learn==1.8.0  # model pickles in assets/models were saved with 1.8.0; 1.9.x fails to unpickle (No module named _loss)
 uvicorn[standard]
