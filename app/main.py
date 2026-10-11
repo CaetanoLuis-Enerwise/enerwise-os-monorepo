@@ -317,7 +317,7 @@ async def generate_prediction(payload: EnergyRequest):
             recommendation = "discharge"
             reason = (
                 f"High forecast volatility ({volatility:.2f}). "
-                "Use the battery for peak shaving."
+                "Shadow-mode recommendation only: consider discharge during forecast high-import intervals (not executed)."
             )
 
         return ForecastResponse(

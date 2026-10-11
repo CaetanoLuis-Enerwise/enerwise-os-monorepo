@@ -35,7 +35,9 @@ step to `hold`.
 The operational controller produces one action per source interval:
 
 - `charge`: negative battery power, normally from forecast PV surplus.
-- `discharge`: positive battery power for peak shaving or expensive periods.
+- `discharge`: positive battery power recommended for forecast high-import or expensive
+  intervals. Shadow/simulated only: nothing is physically dispatched, and the historical
+  benchmark shows 0.0 kW maximum monthly peak reduction.
 - `hold`: no battery movement when action is unnecessary or unsafe.
 
 Every step enforces capacity, charge/discharge power, efficiency, minimum SoC,
