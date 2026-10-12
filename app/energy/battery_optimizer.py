@@ -132,7 +132,7 @@ def optimize_battery_schedule(
                 energy_kwh += charge_kw * interval_hours * config.charge_efficiency
                 charged_kwh += charge_kw * interval_hours
                 action = "charge"
-                reason = "Store forecast solar surplus instead of exporting it."
+                reason = "Shadow-mode recommendation: charge from forecast solar surplus (not executed)."
         else:
             usable_output_kwh = max(
                 0.0,
@@ -153,9 +153,9 @@ def optimize_battery_schedule(
                 discharged_kwh += discharge_kw * interval_hours
                 action = "discharge"
                 reason = (
-                    "Discharge during an expensive tariff period."
+                    "Shadow-mode recommendation: discharge during forecast expensive tariff interval (not executed)."
                     if price >= high_price
-                    else "Discharge to shave the forecast grid peak."
+                    else "Shadow-mode recommendation: discharge during forecast high-import interval (not executed)."
                 )
             elif (
                 config.allow_grid_charging
@@ -173,7 +173,7 @@ def optimize_battery_schedule(
                     energy_kwh += charge_kw * interval_hours * config.charge_efficiency
                     charged_kwh += charge_kw * interval_hours
                     action = "charge"
-                    reason = "Charge from the grid before a forecast expensive period."
+                    reason = "Shadow-mode recommendation: charge from grid before forecast expensive interval (not executed)."
 
         energy_kwh = min(max(energy_kwh, min_energy), max_energy)
         grid_kw = net_kw - battery_kw
