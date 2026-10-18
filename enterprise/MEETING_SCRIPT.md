@@ -27,7 +27,7 @@ exists for your site."
 
 ## Ask
 
-"We need a selected site, 6-12 months of interval data, tariff details,
+"We need a selected site, 12-15 months of interval data, tariff details,
 equipment specifications, and named technical/security owners. We will first
 reconstruct the baseline and issue a go/no-go report. Hardware control only
 starts after shadow-mode and formal safety acceptance."

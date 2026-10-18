@@ -21,7 +21,7 @@ Fora de âmbito: residencial, frota, closed-loop físico, participação em merc
 
 | Item | Mínimo |
 | --- | --- |
-| Consumo no ponto de entrega | 6–12 meses, intervalo 15 ou 30 min, timestamps `Europe/Lisbon`, kW ou kWh |
+| Consumo no ponto de entrega | 12–15 meses, intervalo 15 ou 30 min, timestamps `Europe/Lisbon`, kW ou kWh |
 | PV | mesma cadência, alinhada ao consumo |
 | Tarifa | ciclo horário, potência contratada, termo de energia, compensação de exportação |
 | Bateria (se existir) | kWh úteis, Pmax carga/descarga, SoC min/max/reserva, eficiência, AC ou DC |

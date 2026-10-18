@@ -16,7 +16,7 @@ Duration: 3-5 business days.
 
 Inputs:
 
-- 6-12 months of interval consumption and PV data;
+- 12-15 months of interval consumption and PV data;
 - tariff and export compensation;
 - battery, inverter, meter, and BMS specifications;
 - operating constraints and existing control strategy.

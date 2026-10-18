@@ -267,7 +267,7 @@ def render(payload: dict) -> str:
       <div class="card">
         <h3>Customer Provides</h3>
         <ul>
-          <li>6-12 months of interval consumption and PV.</li>
+          <li>12-15 months of interval consumption and PV.</li>
           <li>Tariff, export compensation, and bill data.</li>
           <li>Battery, inverter, BMS, and meter specifications.</li>
           <li>Technical, cybersecurity, commercial, and site-safety owners.</li>
