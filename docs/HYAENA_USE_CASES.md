@@ -4,7 +4,7 @@ Codex handoff is the law: `docs/GROKBOT_HANDOFF.md`.
 
 ## What we sell
 
-1. **Data and value assessment** (EUR 5,000-10,000). 6-12 months interval load+PV, tariff, battery/inverter specs. Historical simulation. Written go/no-go.
+1. **Data and value assessment** (EUR 5,000-10,000). 12-15 months interval load+PV, tariff, battery/inverter specs. Historical simulation. Written go/no-go.
 2. **Shadow-mode pilot** (EUR 15,000-30,000, 8-12 weeks). Read-only ingest, 30-minute schedules, dashboard, weekly review, KPI report. No physical dispatch.
 3. **Controlled hardware** only after adapter, commissioning, and written safety acceptance (additional EUR 20,000-50,000).
 
