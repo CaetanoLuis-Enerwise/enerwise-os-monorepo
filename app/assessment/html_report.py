@@ -49,6 +49,8 @@ def render_html(result: dict) -> str:
             f"<td>{_num(hour['omie_eur_mwh'], 2)}</td>"
             f"<td>{_num(hour['omie_eur_kwh'], 5)}</td>"
             f"<td>{_num(hour['cost_eur'], 2)}</td>"
+            f"<td>{html.escape(', '.join(hour.get('access_periods') or [])) or '—'}</td>"
+            f"<td>{_num(hour.get('access_eur'), 2)}</td>"
             f"<td>{'yes' if hour['complete'] else 'no'}</td>"
             "</tr>"
         )
@@ -74,6 +76,70 @@ def render_html(result: dict) -> str:
         rejected_html = "<p>None.</p>"
 
     assumptions = "".join(f"<li>{html.escape(line)}</li>" for line in result["assumptions"])
+    bill = result.get("bill") or {}
+    access = bill.get("access") or {"applied": False}
+    if access.get("applied"):
+        period_rows = "".join(
+            "<tr>"
+            f"<td>{html.escape(name)}</td>"
+            f"<td>{_num(values['kwh'], 3)}</td>"
+            f"<td>{html.escape(str(values['eur_per_kwh']))}</td>"
+            f"<td>{_num(values['eur'], 2)}</td>"
+            "</tr>"
+            for name, values in access["by_period"].items()
+        )
+        access_block = (
+            f"<p>Voltage {html.escape(access['voltage'])}, {html.escape(access['cycle_label'])}. "
+            f"Tariff year {access['tariff_year']}. Prices are the ERSE access workbook for 1 January 2026; "
+            "the 1 October 2026 workbook still shows these BTE and MT prices. "
+            f"Access energy: <strong>{_eur(access['energy_eur'])}</strong>.</p>"
+            "<table><thead><tr><th>Period</th><th>kWh</th><th>EUR/kWh</th><th>EUR</th></tr></thead>"
+            f"<tbody>{period_rows}</tbody></table>"
+            f"<p>Contracted power: {_eur(access['contracted_power_eur'])} "
+            f"({html.escape(access['contracted_power_eur_per_kw_day'])} EUR/kW.day, "
+            f"{access['contracted_power_days']} days). "
+            f"{'Not supplied, so this charge is omitted.' if access['contracted_power_omitted'] else ''}</p>"
+            f"<p>Peak power: {_eur(access['peak_power_eur'])}. Basis: {html.escape(access['peak_power_basis'])}. "
+            "The shift does not reduce this charge. Reported peak reduction remains 0.0 kW.</p>"
+            "<p>Reactive energy is not charged. No reactive series was uploaded.</p>"
+        )
+    else:
+        access_block = f"<p>{html.escape(access.get('reason', 'Access tariffs were not applied.'))}</p>"
+    with_access = (result.get("shift") or {}).get("with_access")
+    if with_access:
+        access_shift = (
+            "<p>The same shift, repriced with OMIE plus the time-of-use access energy"
+            f"{', the supplied loss factor' if with_access['includes_loss_factor'] else ''}"
+            f"{', the supplied supplier margin' if with_access['includes_supplier_margin'] else ''}"
+            f"{', and the supplied IEC' if with_access['includes_iec'] else ''}: "
+            f"upper bound <strong>{_eur(with_access['upper_bound_savings_eur'])}</strong>, "
+            f"constrained <strong>{_eur(with_access['constrained_savings_eur'])}</strong>. "
+            "Power charges are not in that saving.</p>"
+        )
+    else:
+        access_shift = (
+            "<p>No access cycle was supplied, so the shift above is wholesale OMIE only.</p>"
+        )
+    input_rows = []
+    for key in ("loss_factor", "supplier_margin", "iec", "iva", "cav", "cav_iva", "dgeg"):
+        item = bill.get(key)
+        if not item:
+            continue
+        state = "supplied" if item["supplied"] else "not supplied — left out"
+        input_rows.append(
+            "<tr>"
+            f"<td>{html.escape(item['name'])}</td>"
+            f"<td>{_eur(item['eur']) if item['supplied'] else state}</td>"
+            f"<td>{html.escape(item['source'])}</td>"
+            "</tr>"
+        )
+    inputs_table = (
+        "<table><thead><tr><th>Input</th><th>Amount</th><th>Source note</th></tr></thead><tbody>"
+        + "".join(input_rows)
+        + "</tbody></table>"
+        + f"<p>Partial total of what this run actually priced: <strong>{_eur(bill.get('total_eur'))}</strong>. "
+        "Lines that were not supplied are not inside that number.</p>"
+    )
     payload = json.dumps(result, ensure_ascii=False).replace("<", "\\u003c")
     load = result["load"]
     cost = result["cost"]
@@ -101,14 +167,19 @@ def render_html(result: dict) -> str:
 <body>
 {banner}
 <h1>Enerwise shadow-mode data assessment</h1>
-<p class="meta">Site {html.escape(result['site_id'])}. Wholesale OMIE energy only. No physical dispatch. Peak reduction reported as 0.0 kW.</p>
+<p class="meta">Site {html.escape(result['site_id'])}. OMIE energy and, when a voltage and cycle are supplied, ERSE network access. No physical dispatch. Peak reduction reported as 0.0 kW.</p>
 <h2>OMIE cost</h2>
 <p class="figure">Priced load: <strong>{_num(cost['priced_kwh'], 3)} kWh</strong>. OMIE MarginalPT cost: <strong>{_eur(cost['priced_cost_eur'])}</strong>.</p>
 <p>Unpriced load left out of that total: {_num(cost['unpriced_kwh'], 3)} kWh across {cost['unpriced_intervals']} intervals. Those intervals were not given a made-up price.</p>
 <h2>Shift from expensive hours to cheap hours</h2>
 <p>Theoretical upper bound, if every complete-hour kWh could move to the cheapest complete hour that same Lisbon day: <strong>{_eur(shift['upper_bound_savings_eur'])}</strong>. This is not an achievable saving.</p>
 {constrained}
+{access_shift}
 <p>Reported peak reduction: <strong>0.0 kW</strong>. Reference site SITE-00 historical benchmark maximum monthly peak reduction is 0.0 kW. This assessment does not calculate or sell a peak cut.</p>
+<h2>Network access tariffs</h2>
+{access_block}
+<h2>Margin, losses and taxes</h2>
+{inputs_table}
 <h2>Load file</h2>
 <table>
 <tr><th>Item</th><th>Value</th></tr>
@@ -136,7 +207,7 @@ def render_html(result: dict) -> str:
 </table>
 <h2>OMIE cost per hour</h2>
 <table>
-<thead><tr><th>Hour start (Europe/Lisbon)</th><th>kWh</th><th>OMIE EUR/MWh</th><th>EUR/kWh</th><th>Cost EUR</th><th>Complete hour</th></tr></thead>
+<thead><tr><th>Hour start (Europe/Lisbon)</th><th>kWh</th><th>OMIE EUR/MWh</th><th>EUR/kWh</th><th>OMIE EUR</th><th>Access period</th><th>Access EUR</th><th>Complete hour</th></tr></thead>
 <tbody>
 {''.join(hour_rows)}
 </tbody>

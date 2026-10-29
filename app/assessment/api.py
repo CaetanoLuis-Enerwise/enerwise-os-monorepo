@@ -33,6 +33,17 @@ async def assessment_report(
     site_id: str = Form("unspecified"),
     shiftable_fraction: float | None = Form(default=None),
     example_data: bool = Form(default=False),
+    voltage: str | None = Form(default=None),
+    cycle: str | None = Form(default=None),
+    contracted_power_kw: float | None = Form(default=None),
+    peak_power_kw: float | None = Form(default=None),
+    loss_factor: float | None = Form(default=None),
+    supplier_margin_eur_per_kwh: float | None = Form(default=None),
+    iec_eur_per_kwh: float | None = Form(default=None),
+    iva_rate: float | None = Form(default=None),
+    cav_eur_per_month: float | None = Form(default=None),
+    cav_iva_rate: float | None = Form(default=None),
+    dgeg_eur_per_month: float | None = Form(default=None),
 ):
     load_text = await _read_upload(load_csv, "Load CSV")
     omie_text = await _read_upload(omie_file, "OMIE file")
@@ -43,6 +54,17 @@ async def assessment_report(
             site_id=site_id,
             shiftable_fraction=shiftable_fraction,
             example_data=example_data,
+            voltage=voltage,
+            cycle=cycle,
+            contracted_power_kw=contracted_power_kw,
+            peak_power_kw=peak_power_kw,
+            loss_factor=loss_factor,
+            supplier_margin_eur_per_kwh=supplier_margin_eur_per_kwh,
+            iec_eur_per_kwh=iec_eur_per_kwh,
+            iva_rate=iva_rate,
+            cav_eur_per_month=cav_eur_per_month,
+            cav_iva_rate=cav_iva_rate,
+            dgeg_eur_per_month=dgeg_eur_per_month,
         )
     except AssessmentInputError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

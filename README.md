@@ -81,7 +81,11 @@ python -m app.assessment \
   --out /tmp/EXAMPLE_assessment.html
 ```
 
-Omit `--shiftable-fraction` when the flexible share of load is unknown. The report then states the theoretical upper bound and does not state an achievable shift saving. Daily `marginalpdbc` files can be pasted into one text file. `POST /assessment/report` accepts the same two files as a multipart upload and returns the HTML.
+Omit `--shiftable-fraction` when the flexible share of load is unknown. The report then states the theoretical upper bound and does not state an achievable shift saving. Daily `marginalpdbc` files can be pasted into one text file.
+
+Add the 2026 ERSE access tariff with `--voltage BTE` or `--voltage MT` and `--cycle bte_daily`, `bte_weekly`, or `mt_weekly`. `--contracted-power-kw` prices the contracted-power term. Peak power uses the maximum 15-minute kW during ponta unless you pass `--peak-power-kw`. Supplier margin, losses, IVA, IEC, CAV and the DGEG fee are added only when you pass them. The checked prices live in `app/assessment/data/erse_access_2026.json`.
+
+`POST /assessment/report` accepts the same files and fields and returns the HTML.
 
 Print the HTML to PDF if a PDF copy is required. This repo does not render PDF itself.
 

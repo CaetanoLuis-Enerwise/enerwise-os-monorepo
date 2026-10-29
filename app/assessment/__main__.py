@@ -42,6 +42,21 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Mark the report as example data. Also forced when a filename contains EXAMPLE.",
     )
+    parser.add_argument("--voltage", choices=["BTE", "MT"], default=None)
+    parser.add_argument(
+        "--cycle",
+        choices=["bte_daily", "bte_weekly", "mt_weekly"],
+        default=None,
+    )
+    parser.add_argument("--contracted-power-kw", type=float, default=None)
+    parser.add_argument("--peak-power-kw", type=float, default=None)
+    parser.add_argument("--loss-factor", type=float, default=None)
+    parser.add_argument("--supplier-margin-eur-per-kwh", type=float, default=None)
+    parser.add_argument("--iec-eur-per-kwh", type=float, default=None)
+    parser.add_argument("--iva-rate", type=float, default=None)
+    parser.add_argument("--cav-eur-per-month", type=float, default=None)
+    parser.add_argument("--cav-iva-rate", type=float, default=None)
+    parser.add_argument("--dgeg-eur-per-month", type=float, default=None)
     args = parser.parse_args(argv)
     try:
         result = run_assessment(
@@ -50,6 +65,17 @@ def main(argv: list[str] | None = None) -> int:
             site_id=args.site_id,
             shiftable_fraction=args.shiftable_fraction,
             example_data=args.example_data,
+            voltage=args.voltage,
+            cycle=args.cycle,
+            contracted_power_kw=args.contracted_power_kw,
+            peak_power_kw=args.peak_power_kw,
+            loss_factor=args.loss_factor,
+            supplier_margin_eur_per_kwh=args.supplier_margin_eur_per_kwh,
+            iec_eur_per_kwh=args.iec_eur_per_kwh,
+            iva_rate=args.iva_rate,
+            cav_eur_per_month=args.cav_eur_per_month,
+            cav_iva_rate=args.cav_iva_rate,
+            dgeg_eur_per_month=args.dgeg_eur_per_month,
         )
     except AssessmentInputError as exc:
         print(str(exc), file=sys.stderr)
@@ -66,6 +92,13 @@ def main(argv: list[str] | None = None) -> int:
         "constrained_savings_eur": result["shift"]["constrained_savings_eur"],
         "peak_reduction_kw": result["peak_reduction_kw"],
         "shadow_mode": result["shadow_mode"],
+        "access_energy_eur": (result["bill"]["access"] or {}).get("energy_eur"),
+        "shift_with_access_eur": (
+            None
+            if result["shift"]["with_access"] is None
+            else result["shift"]["with_access"]["constrained_savings_eur"]
+        ),
+        "partial_total_eur": result["bill"]["total_eur"],
     }
     print(json.dumps(summary, indent=2))
     return 0
