@@ -1,5 +1,6 @@
 fastapi
 httpx
+python-multipart
 joblib
 langchain-openai>=1.0,<2
 langgraph>=1.0,<2

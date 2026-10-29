@@ -11,7 +11,7 @@ Codex handoff is the law: `docs/GROKBOT_HANDOFF.md`.
 ## What Hyaena does in this repo
 
 - Enforce `AGENTS.md` and `docs/ARCHITECTURE_GUARDRAILS.md`.
-- Next engineering, in order: OMIE/market provider behind `app/market`; weather provider; tenant/site config; auth and operator roles.
+- OMIE MarginalPT and the shadow-mode assessment report now live in `app/market` and `app/assessment`. Next engineering, in order: weather provider; tenant/site config; auth and operator roles.
 - Preserve market safe-mode: external market failure must return a valid plan with `market.safe_mode=true` and every step `hold`.
 - Never Streamlit. Never business logic in the frontend. Never ML dispatching a battery. Never claim physical autonomy or peak reduction unless evidence says so.
 

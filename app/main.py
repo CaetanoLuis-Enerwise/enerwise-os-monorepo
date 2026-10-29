@@ -32,6 +32,7 @@ from app.operations.safety import (
     evaluate_command_safety,
 )
 from agentic_loops.api import router as agentic_router
+from app.assessment.api import router as assessment_router
 
 try:
     from app.ml.inference_hybrid import get_forecast
@@ -80,6 +81,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(agentic_router)
+app.include_router(assessment_router)
 
 
 class EnergyRequest(BaseModel):

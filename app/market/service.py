@@ -4,6 +4,7 @@ from typing import Literal, Optional, Sequence
 
 from app.energy.battery_optimizer import default_time_of_use_tariff
 from app.market.models import MarketPricePoint, MarketPriceSeries
+from app.market.omie import OmieMarketPriceProvider, is_omie_marginal_file
 from app.market.providers import (
     CsvMarketPriceProvider,
     ExplicitPriceProvider,
@@ -40,13 +41,17 @@ def _safe_fallback_prices(
     )
 
 
-def _configured_external_provider() -> CsvMarketPriceProvider:
+def _configured_external_provider() -> CsvMarketPriceProvider | OmieMarketPriceProvider:
     csv_path = os.getenv("ENERWISE_MARKET_PRICE_CSV")
     if not csv_path:
         raise MarketPriceProviderError("ENERWISE_MARKET_PRICE_CSV is not configured.")
 
+    path = Path(csv_path)
+    if is_omie_marginal_file(path):
+        return OmieMarketPriceProvider(path)
+
     return CsvMarketPriceProvider(
-        path=Path(csv_path),
+        path=path,
         timestamp_column=os.getenv("ENERWISE_MARKET_TIMESTAMP_COLUMN", "timestamp"),
         price_column=os.getenv("ENERWISE_MARKET_PRICE_COLUMN", "import_price_eur_kwh"),
     )

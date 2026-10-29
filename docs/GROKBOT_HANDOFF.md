@@ -77,7 +77,7 @@ OK
 
 ## Suggested Next Work
 
-1. Add a real OMIE/market provider behind `app/market` without changing API contracts.
+1. OMIE MarginalPT now feeds `app/market` and `python -m app.assessment`. Next data gap is a weather provider, still behind a provider class.
 2. Add weather ingestion as a provider, not inside the frontend.
 3. Add tenant/site configuration for commercial-building pilots.
 4. Add auth and operator roles before any customer-facing pilot.

@@ -1,0 +1,217 @@
+{
+  "tariff_year": 2026,
+  "territory": "Portugal continental",
+  "prices_in_force": "These access prices were approved for 1 January 2026. The ERSE workbook dated 1 October 2026 still shows the same BTE and MT access prices. Diretiva n.º 4/2026 updated the CUR energy tariff from 1 October 2026; it did not replace this access table.",
+  "sources": [
+    {
+      "title": "Quadros de Tarifas Energia Elétrica vigentes a partir de 01 de janeiro de 2026",
+      "url": "https://www.erse.pt/media/wfziq5t5/s_tarifas_net.xlsx",
+      "sheet": "Tarifas Acesso",
+      "used_for": "BTE and MT access prices"
+    },
+    {
+      "title": "Quadros de Tarifas e Preços de Energia Elétrica vigentes a partir de 1 de outubro de 2026",
+      "url": "https://www.erse.pt/media/wbxljhas/s_tarifas_net_outubro-2026.xlsx",
+      "sheet": "Tarifas Acesso",
+      "used_for": "Check that the 1 October 2026 update did not change BTE and MT access prices"
+    },
+    {
+      "title": "Tarifas e preços para a energia elétrica e outros serviços em 2026",
+      "url": "https://www.erse.pt/media/irglmtt3/tarifas-e-pre%C3%A7os-se-2026.pdf",
+      "locator": "Quadro 3-27",
+      "used_for": "Same BTE and MT access prices in the December 2025 decision document"
+    },
+    {
+      "title": "Diretiva n.º 1/2026, de 7 de janeiro",
+      "url": "https://www.erse.pt/atividade/regulacao/tarifas-e-precos-eletricidade/",
+      "used_for": "Legal approval of the 2026 tariffs. The Diário da República tables are images; the numbers below are taken from the ERSE workbook."
+    },
+    {
+      "title": "Períodos horários na energia elétrica em Portugal, setembro 2020",
+      "url": "https://www.erse.pt/media/wijn0vgt/periodos-hor%C3%A1rios-de-energia-el%C3%A9trica-em-portugal.pdf",
+      "used_for": "Mainland daily and weekly clock for ponta, cheias and vazio. Super vazio is the 02:00-06:00 split of vazio used for tetra-horário BTE and MT."
+    },
+    {
+      "title": "Calculadora de fatura BTE MT AT MAT, mapas horários, última atualização 31 de julho de 2026",
+      "url": "https://www.erse.pt/media/0m1gam1s/calculadora_fatura_bte_mt_at_mat_encerramento-cp-137.xlsx",
+      "sheet": "ciclos_all",
+      "used_for": "Mapa_Vigente columns. These are the cycles in force before Diretiva n.º 3/2026 takes effect for BTE and MT on 1 April 2027."
+    },
+    {
+      "title": "Diretiva n.º 3/2026, de 19 de agosto",
+      "url": "https://www.erse.pt/media/3hanbooq/diretiva-n%C2%BA-3_2026-19-de-agosto-aprova-os-per%C3%ADodos-hor%C3%A1rios.pdf",
+      "used_for": "States that the new clocks apply to BTE and MT from 1 April 2027. Those new clocks are not used here."
+    },
+    {
+      "title": "Código dos Impostos Especiais de Consumo, artigo 92.º, redação em vigor em 1 de janeiro de 2026",
+      "url": "https://info-aduaneiro.portaldasfinancas.gov.pt/pt/legislacao_aduaneira/codigos_aduaneiros/Documents/CIEC.pdf",
+      "used_for": "Legal band for the electricity excise on the mainland: 1 to 1.10 EUR/MWh. The code does not fix a single rate inside that band."
+    },
+    {
+      "title": "Tarifa Social na Eletricidade, nota ERSE com preços de outubro de 2026",
+      "url": "https://www.erse.pt/media/vhajllzh/tarifa-social-eletricidade-out2026.pdf",
+      "used_for": "Worked example uses IEC at 0.001 EUR/kWh, IVA normal at 23 percent and IVA reduzida at 6 percent. A social-tariff CAV line uses 1.85 EUR/month. None of these is applied unless supplied as an input."
+    }
+  ],
+  "voltage_levels": {
+    "BTE": {
+      "name": "Baixa tensão especial",
+      "energy_eur_per_kwh": {
+        "ponta": "0.0397",
+        "cheias": "0.0353",
+        "vazio_normal": "0.0285",
+        "super_vazio": "0.0237"
+      },
+      "contracted_power_eur_per_kw_day": "0.0563",
+      "peak_power_eur_per_kw_day": "0.5521",
+      "reactive_eur_per_kvarh": {
+        "inductive": "0.0325",
+        "capacitive": "0.0248",
+        "applied": false,
+        "reason": "The upload has no reactive-energy series, so reactive access is not charged."
+      },
+      "cycles": ["bte_daily", "bte_weekly"]
+    },
+    "MT": {
+      "name": "Média tensão",
+      "energy_eur_per_kwh": {
+        "ponta": "0.0203",
+        "cheias": "0.0182",
+        "vazio_normal": "0.0146",
+        "super_vazio": "0.0129"
+      },
+      "contracted_power_eur_per_kw_day": "0.0458",
+      "peak_power_eur_per_kw_day": "0.2435",
+      "reactive_eur_per_kvarh": {
+        "inductive": "0.0257",
+        "capacitive": "0.0193",
+        "applied": false,
+        "reason": "The upload has no reactive-energy series, so reactive access is not charged."
+      },
+      "cycles": ["mt_weekly"]
+    }
+  },
+  "cycles": {
+    "bte_daily": {
+      "label": "Ciclo diário, BTE, Portugal continental",
+      "holidays_as_sunday": false,
+      "winter": {
+        "all_days": [
+          [0, 120, "vazio_normal"],
+          [120, 360, "super_vazio"],
+          [360, 480, "vazio_normal"],
+          [480, 540, "cheias"],
+          [540, 630, "ponta"],
+          [630, 1080, "cheias"],
+          [1080, 1230, "ponta"],
+          [1230, 1320, "cheias"],
+          [1320, 1440, "vazio_normal"]
+        ]
+      },
+      "summer": {
+        "all_days": [
+          [0, 120, "vazio_normal"],
+          [120, 360, "super_vazio"],
+          [360, 480, "vazio_normal"],
+          [480, 630, "cheias"],
+          [630, 780, "ponta"],
+          [780, 1170, "cheias"],
+          [1170, 1260, "ponta"],
+          [1260, 1320, "cheias"],
+          [1320, 1440, "vazio_normal"]
+        ]
+      }
+    },
+    "bte_weekly": {
+      "label": "Ciclo semanal, BTE, Portugal continental",
+      "holidays_as_sunday": false,
+      "winter": {
+        "weekday": [
+          [0, 120, "vazio_normal"],
+          [120, 360, "super_vazio"],
+          [360, 420, "vazio_normal"],
+          [420, 570, "cheias"],
+          [570, 720, "ponta"],
+          [720, 1110, "cheias"],
+          [1110, 1260, "ponta"],
+          [1260, 1440, "cheias"]
+        ],
+        "saturday": [
+          [0, 120, "vazio_normal"],
+          [120, 360, "super_vazio"],
+          [360, 570, "vazio_normal"],
+          [570, 780, "cheias"],
+          [780, 1110, "vazio_normal"],
+          [1110, 1320, "cheias"],
+          [1320, 1440, "vazio_normal"]
+        ],
+        "sunday": [
+          [0, 120, "vazio_normal"],
+          [120, 360, "super_vazio"],
+          [360, 1440, "vazio_normal"]
+        ]
+      },
+      "summer": {
+        "weekday": [
+          [0, 120, "vazio_normal"],
+          [120, 360, "super_vazio"],
+          [360, 420, "vazio_normal"],
+          [420, 555, "cheias"],
+          [555, 735, "ponta"],
+          [735, 1440, "cheias"]
+        ],
+        "saturday": [
+          [0, 120, "vazio_normal"],
+          [120, 360, "super_vazio"],
+          [360, 540, "vazio_normal"],
+          [540, 840, "cheias"],
+          [840, 1200, "vazio_normal"],
+          [1200, 1320, "cheias"],
+          [1320, 1440, "vazio_normal"]
+        ],
+        "sunday": [
+          [0, 120, "vazio_normal"],
+          [120, 360, "super_vazio"],
+          [360, 1440, "vazio_normal"]
+        ]
+      }
+    },
+    "mt_weekly": {
+      "label": "Ciclo semanal, MT, Portugal continental",
+      "holidays_as_sunday": true,
+      "same_clock_as": "bte_weekly"
+    }
+  },
+  "not_applied": {
+    "seasonal_peak_option": "The MT opção tarifária por épocas uses different peak-power prices by season. This assessment uses the standard potência em horas de ponta price. The epoch calendar is not applied."
+  },
+  "inputs_without_a_verified_single_value": {
+    "supplier_margin_eur_per_kwh": {
+      "reference_value": null,
+      "source": "ERSE: in the liberalized market the energy and commercialization component is set by the supplier, not by the access tariff. https://www.erse.pt/atividade/regulacao/tarifas-e-precos-eletricidade/"
+    },
+    "loss_factor": {
+      "reference_value": null,
+      "source": "ERSE publishes coeficientes de ajustamento para perdas by period and voltage in the tariff-structure documents. No single verified coefficient is stored here. A supplied factor multiplies only the OMIE energy term."
+    },
+    "iva_rate": {
+      "reference_normal": "0.23",
+      "reference_reduced": "0.06",
+      "source": "ERSE nota da tarifa social, outubro 2026, which states the taxa normal de IVA (23%) and the taxa reduzida (6%). https://www.erse.pt/media/vhajllzh/tarifa-social-eletricidade-out2026.pdf Lei n.º 38/2024 is the VAT change cited by ERSE in Estrutura tarifária do setor elétrico em 2026. Which rate applies to a BTE or MT bill is not chosen by this file."
+    },
+    "iec_eur_per_kwh": {
+      "reference_value": null,
+      "legal_band_eur_per_mwh": ["1", "1.10"],
+      "leaflet_example_eur_per_kwh": "0.001",
+      "source": "CIEC artigo 92.º fixes the mainland electricity band at 1 to 1.10 EUR/MWh and leaves the rate inside the band to a portaria. The October 2026 ERSE social-tariff leaflet multiplies by 0.001 EUR/kWh in one worked example. That example is not applied unless you pass iec_eur_per_kwh."
+    },
+    "cav_eur_per_month": {
+      "reference_value": null,
+      "source": "ERSE names the Contribuição Audiovisual on the electricity bill. The October 2026 social-tariff leaflet shows 1.85 EUR/month on a vulnerable-customer example and a partial exemption of 1.85 EUR/month. The standard amount for this building was not verified, so nothing is charged unless cav_eur_per_month is supplied."
+    },
+    "dgeg_eur_per_month": {
+      "reference_value": null,
+      "source": "ERSE names the taxa da Direção-Geral de Energia e Geologia on the bill. The amount depends on the installation. No single official amount is stored."
+    }
+  }
+}
