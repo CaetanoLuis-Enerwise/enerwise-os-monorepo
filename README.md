@@ -65,8 +65,29 @@ model pipelines remain in place as research evidence. They are not deleted or
 moved by the runtime cleanup. See `docs/ARCHITECTURE.md` for the boundary
 between the official application and preserved research material.
 
+## Paid Data Assessment
+
+One commercial building, shadow mode. The client CSV is 15-minute load. Prices are OMIE day-ahead MarginalPT (column 5, EUR/MWh), converted to EUR/kWh and aligned from Europe/Madrid to Europe/Lisbon. The HTML report shows the OMIE cost per hour, a same-day load-shift figure under the assumptions you pass in, and those assumptions in writing. It does not dispatch a battery. Reported peak reduction is 0.0 kW, including for reference site SITE-00.
+
+The checked-in files under `examples/assessment/` are example data, not a client.
+
+```bash
+python -m app.assessment \
+  --load examples/assessment/EXAMPLE_15min_load.csv \
+  --omie examples/assessment/EXAMPLE_omie_marginalpdbc.txt \
+  --site-id EXAMPLE-SITE \
+  --example-data \
+  --shiftable-fraction 0.5 \
+  --out /tmp/EXAMPLE_assessment.html
+```
+
+Omit `--shiftable-fraction` when the flexible share of load is unknown. The report then states the theoretical upper bound and does not state an achievable shift saving. Daily `marginalpdbc` files can be pasted into one text file. `POST /assessment/report` accepts the same two files as a multipart upload and returns the HTML.
+
+Print the HTML to PDF if a PDF copy is required. This repo does not render PDF itself.
+
 ## Operational Endpoints
 
+- `POST /assessment/report`: shadow-mode HTML assessment from a 15-minute load CSV and an OMIE MarginalPT file.
 - `POST /operations/plan`: forecast and constrained battery schedule.
 - `POST /operations/control-cycle`: next setpoint and safety interlocks.
 - `POST /operations/live-cycle`: telemetry-aware shadow or simulated cycle.

@@ -25,10 +25,21 @@ Supported sources:
 - `explicit`: validates and imputes request-provided prices.
 - `external_market`: reads configured market prices from a provider. The
   current provider supports CSV input through `ENERWISE_MARKET_PRICE_CSV`.
+  An OMIE `marginalpdbc` file is detected and read as MarginalPT (column 5,
+  EUR/MWh divided by 1000). Those prices are not interpolated. A negative
+  price or a timestamp the file does not cover forces safe mode.
 
 If `external_market` is unavailable, malformed, or empty, the operations API
 returns a valid plan with `market.safe_mode=true` and forces every dispatch
 step to `hold`.
+
+## Paid Assessment
+
+`app/assessment` prices one uploaded 15-minute load CSV with OMIE MarginalPT
+and writes an HTML report. Shift savings are a same-day energy counterfactual
+with the assumptions printed in the report. This path does not forecast, does
+not dispatch, and reports peak reduction as 0.0 kW. `POST /assessment/report`
+returns that HTML. The React app does not calculate it.
 
 ## Battery Controller
 

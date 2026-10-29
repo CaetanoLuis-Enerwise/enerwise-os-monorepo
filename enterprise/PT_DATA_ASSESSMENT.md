@@ -33,6 +33,18 @@ Telemetria live é opcional nesta fase. Protocolo (Modbus, MQTT, REST, cloud do 
 
 **No-go de ingestão:** buracos sistemáticos; PV só mensal; tarifa opaca; medição misturada sem mapa; bateria sem envelope operacional (não se simula despacho).
 
+## Como correr
+
+```bash
+python -m app.assessment \
+  --load carga_15min.csv \
+  --omie marginalpdbc.txt \
+  --site-id SITE-ID \
+  --out relatorio.html
+```
+
+O CSV de carga é de 15 minutos (`timestamp` e `load_kw` ou `load_kwh`). O ficheiro OMIE é o `marginalpdbc`: coluna 5, `MarginalPT`, EUR/MWh. Sem `--shiftable-fraction` o relatório não afirma uma poupança de deslocação atingível. A redução de ponta reportada é 0,0 kW. SITE-00 mantém o benchmark histórico de 0,0 kW. Imprimir o HTML gera o PDF. Os ficheiros em `examples/assessment/` são dados de exemplo.
+
 ## Entrega
 
 - Relatório de qualidade de dados
