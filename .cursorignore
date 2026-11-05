@@ -1,0 +1,7 @@
+# Block secret environment files from agent file tools.
+# Checked-in templates stay readable so variable names remain available.
+# Runtime still loads .env through the process environment; this file does not change that.
+.env
+.env.*
+!.env.example
+!.env.local.template
